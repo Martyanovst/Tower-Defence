@@ -15,6 +15,8 @@ def create_config(path):
     config.add_section("Tree")
     config.add_section("Dragon")
     config.add_section("Skeleton")
+    config.add_section("Golem")
+    config.add_section("Thunderstorm")
 
     config.set("Player_Settings", "gold", "130")
     config.set("Player_Settings", "level_reward", "250")
@@ -97,6 +99,20 @@ def create_config(path):
     config.set("Dragon", "range_2", "200")
     config.set("Dragon", "price", "30")
     config.set("Dragon", "hitbox", "10")
+    config.set("Dragon","attack", "dragon_attack")
+    config.set("Dragon","immunity", "<class 'Gameplay.Poison'>")
+
+
+    config.set("Golem", "damage", "2")
+    config.set("Golem", "health", "1500")
+    config.set("Golem", "speed", "3")
+    config.set("Golem", "range_1", "15")
+    config.set("Golem", "range_2", "150")
+    config.set("Golem", "price", "50")
+    config.set("Golem", "hitbox", "15")
+    config.set("Golem", "attack", "golem_attack")
+    config.set("Golem","immunity", "<class 'Gameplay.Magic'>")
+
 
     config.set("Skeleton", "damage", "1")
     config.set("Skeleton", "health", "80")
@@ -107,6 +123,9 @@ def create_config(path):
     config.set("Skeleton", "hitbox", "10")
     config.set("Skeleton", "animation", "36")
 
+    config.set("Thunderstorm", "damage", "50")
+    config.set("Thunderstorm", "animation", "36")
+    config.set("Thunderstorm", "mana", "100")
 
     with open(path, "w") as config_file:
         config.write(config_file)

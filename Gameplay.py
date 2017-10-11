@@ -21,6 +21,7 @@ class Game:
         self.creatures = []
         self.lock = threading.Lock()
         self.spawn = threading.Thread(target=self.create)
+        self.spell = None
 
     def start_game(self):
         self.spawn.start()
@@ -29,9 +30,18 @@ class Game:
     def get_config():
         return os.getcwd() + '\Config.ini'
 
+    def cast_spell(self, class_, location):
+        mana_cost = int(self.config.get(class_, 'mana'))
+        if self.player.mana >= mana_cost:
+            self.player.mana -= mana_cost
+            self.spell = Spell(class_, self)
+            self.spell.invoke(self.creatures, location)
+
     def create(self):
         tree = 'Tree'
         skeleton = 'Skeleton'
+        dragon = 'Dragon'
+        golem = 'Golem'
         time.sleep(7)
         self.creatures.append(Monster(self.start, self.road, skeleton))
         for i in range(4):
@@ -41,7 +51,7 @@ class Game:
             time.sleep(1)
         self.creatures.append(Monster(self.start, self.road, tree))
         time.sleep(0.5)
-        self.creatures.append(Monster(self.start, self.road, skeleton))
+        self.creatures.append(Boss(self.start, self.road, golem))
         time.sleep(0.5)
         self.creatures.append(Monster(self.start, self.road, tree))
         time.sleep(0.25)
@@ -52,7 +62,7 @@ class Game:
             self.creatures.append(Monster(self.start, self.road, skeleton))
             time.sleep(3)
         self.lock.acquire()
-        self.creatures.append(Dragon(self.start, self.road))
+        self.creatures.append(Boss(self.start, self.road, dragon))
         self.lock.release()
         while len(self.creatures) != 0:
             time.sleep(1)
@@ -69,7 +79,7 @@ class Game:
             self.lock.release()
             time.sleep(0.5)
         self.lock.acquire()
-        self.creatures.append(Dragon(self.start, self.road))
+        self.creatures.append(Boss(self.start, self.road, golem))
         self.lock.release()
         time.sleep(5)
         for i in range(10):
@@ -80,13 +90,14 @@ class Game:
             self.lock.acquire()
             self.creatures.append(Monster(self.start, self.road, skeleton))
             self.lock.release()
-        self.creatures.append(Dragon(self.start, self.road))
+        self.creatures.append(Boss(self.start, self.road, golem))
 
     def fight(self):
         for tower in self.player.towers:
             bullet = tower.fire(self.creatures)
             if bullet is not None:
                 self.bullets.append(bullet)
+
 
     def enemy_move(self):
         self.lock.acquire()
@@ -102,6 +113,8 @@ class Game:
         self.lock.acquire()
         for e in dead:
             self.player.get_coins(e.price)
+            if self.player.mana < 100:
+                self.player.mana += 2
             self.creatures.remove(e)
         self.lock.release()
         self.bullets = list(filter(lambda x: not x.hit, self.bullets))
@@ -143,6 +156,7 @@ class Player:
         self.gold = int(config.get_setting(self.config_path,'Player_Settings','gold'))
         self.towers = []
         self.health = int(config.get_setting(self.config_path,'Player_Settings','health'))
+        self.mana = 100
 
     def get_coins(self, treasure):
         self.gold += treasure
@@ -165,7 +179,32 @@ class Player:
     def is_dead(self):
         return self.health <= 0
 
+class Spell:
 
+    def __init__(self, class_, game):
+        self.damage = int(game.config.get(class_, 'damage'))
+        self.class_ = class_
+        self.image = class_
+
+        self.full_animation = int(game.config.get(class_, 'animation'))
+        self.animation = 5
+        self.is_executed = False
+
+
+    def invoke(self, monsters, location):
+        if self.class_ == 'Thunderstorm':
+            self.thunderstorm(monsters)
+            return
+
+    def thunderstorm(self, monsters):
+        for monster in monsters:
+            monster.get_damage(self)
+
+    def get_image(self):
+        if self.animation == self.full_animation:
+           self.is_executed = True
+        self.animation += 1
+        return 0
 
 class Mage:
 
@@ -230,7 +269,7 @@ class Magic:
             self.hit = True
         if vector.length < self.target.hitbox:
             if self.target not in self.visited:
-                self.target.get_damage(self.damage)
+                self.target.get_damage(self)
                 self.visited.append(self.target)
                 self.pounce -= 1
             else:
@@ -306,7 +345,7 @@ class Poison:
         if self.target.is_dead():
             self.hit = True
         if vector.length < self.target.hitbox:
-            self.target.get_damage(self.damage)
+            self.target.get_damage(self)
             self.target.slow_down(self.slow)
             self.hit = True
         self.direction = vector.angle
@@ -330,7 +369,7 @@ class Arrow:
     def move(self):
         vector = self.target.location - self.location
         if vector.length < self.target.hitbox:
-            self.target.get_damage(self.damage)
+            self.target.get_damage(self)
             self.hit = True
         self.direction = vector.angle
         self.location += Vector(math.cos(self.direction) * self.speed,
@@ -416,8 +455,8 @@ class Monster:
         self.animation += 1
         return self.animation // 5 - 1
 
-    def get_damage(self, damage):
-        self.health -= damage
+    def get_damage(self, source):
+        self.health -= source.damage
 
     def heath_percents(self):
         return self.health / self.full_health
@@ -426,35 +465,37 @@ class Monster:
         self.speed_percent = 1 - value
 
 
-class Dragon:
+class Boss:
 
-    def __init__(self, start, path):
+    def __init__(self, start, path, class_):
         self.location = Vector(start.X, start.Y)
-        self.full_heath = int(config.get_setting(Game.get_config(),'Dragon', 'health'))
+        self.full_heath = int(config.get_setting(Game.get_config(),class_, 'health'))
         self.health = self.full_heath
         self.animation = 5
-        self.damage = int(config.get_setting(Game.get_config(),'Dragon', 'damage'))
+        self.class_ = class_
+        self.damage = int(config.get_setting(Game.get_config(),class_, 'damage'))
         self.next = path.index(start) + 1
-        self.speed = int(config.get_setting(Game.get_config(),'Dragon', 'speed'))
-        self.range = int(config.get_setting(Game.get_config(),'Dragon', 'range_1'))
+        self.speed = int(config.get_setting(Game.get_config(),class_, 'speed'))
+        self.range = int(config.get_setting(Game.get_config(),class_, 'range_1'))
         self.points = path
         self.is_completed = False
         self.finish = False
         self.speed_percent = 1
-        self.image = 'dragon'
-        self.hitbox = int(config.get_setting(Game.get_config(),'Dragon', 'hitbox'))
-        self.price = int(config.get_setting(Game.get_config(),'Dragon', 'price'))
+        self.immunity = config.get_setting(Game.get_config(),class_, 'immunity')
+        self.image = class_
+        self.hitbox = int(config.get_setting(Game.get_config(),class_, 'hitbox'))
+        self.price = int(config.get_setting(Game.get_config(),class_, 'price'))
 
     def move(self, player):
         if not self.finish:
             vector = self.points[self.next] - self.location
             if self.next == len(self.points) - 1:
-                self.range = int(config.get_setting(Game.get_config(),'Dragon', 'range_2'))
+                self.range = int(config.get_setting(Game.get_config(),self.class_, 'range_2'))
             if vector.length < self.range:
                 self.next += 1
                 if self.next == len(self.points):
                     self.finish = True
-                    self.image = 'dragonAttack'
+                    self.image = config.get_setting(Game.get_config(),self.class_, 'attack')
                     self.animation = 5
                     return
             dir = vector.angle
@@ -474,11 +515,14 @@ class Dragon:
         self.animation += 1
         return self.animation // 5 - 1
 
-    def get_damage(self, damage):
-        self.health -= damage
+    def get_damage(self, source):
+        if str(source.__class__) != self.immunity:
+            self.health -= source.damage
 
     def heath_percents(self):
         return self.health / self.full_heath
 
     def slow_down(self, value):
+        if self.class_ == 'Dragon':
+            return
         self.speed_percent = 1 - value
