@@ -2,26 +2,23 @@ from Gameplay import *
 from Vectors import *
 import sys
 from PyQt5.QtCore import QBasicTimer, Qt
-from PyQt5.QtWidgets import QMainWindow,  QApplication, QPushButton,QDesktopWidget
+from PyQt5.QtWidgets import QMainWindow, QApplication,\
+    QPushButton, QDesktopWidget
 from PyQt5.QtGui import QPainter, QImage, QColor, \
     QFont, QCursor, QPixmap, QIcon
 
-class GameModel(QMainWindow):
+
+class View(QMainWindow):
 
     def __init__(self):
         super().__init__()
         self.game = Game()
-        path =  Game.get_config()
         self.prices = {
-                       'castle' :
-                           [self.game.config.get('Game','castle_1'),
-                            self.game.config.get('Game','castle_2')] ,
-                       'archers':
-                           self.game.config.get( 'Archers', 'price'),
-                       'poison':
-                           self.game.config.get('Poison','price'),
-                       'magic':
-                           self.game.config.get('Magic','price')
+                       'castle': [self.game.config.get('Game', 'castle_1'),
+                                  self.game.config.get('Game', 'castle_2')],
+                       'archers': self.game.config.get('Archers', 'price'),
+                       'poison': self.game.config.get('Poison', 'price'),
+                       'magic': self.game.config.get('Magic', 'price')
                        }
 
         self.setWindowTitle('Tower Defence')
@@ -58,42 +55,31 @@ class GameModel(QMainWindow):
 
         self.timer = QBasicTimer()
         self.timer.start(20, self)
-        #self.images_resize()
+        self.images_resize()
         self.game.start_game()
         self.showFullScreen()
-
 
     def on_button_click(self, cursor):
         self.setCursor(self.cursors[cursor])
         self.target = cursor
 
     def load_images(self):
-        self.images = {'background': [QImage(), QImage(), QImage()],
+        self.images = {'background': [QImage()for i in range(5)],
                        'road': QImage(),
-                       'archers': [QImage(), QImage(), QImage()],
-                       'Tree': [QImage(), QImage(), QImage()],
+                       'archers': [QImage()for i in range(3)],
+                       'Tree': [QImage()for i in range(3)],
                        'arrow': QImage(),
-                       'dragon_attack': [QImage(), QImage(), QImage(),
-                                        QImage(), QImage(),
-                                        QImage(), QImage()],
-                       'Dragon': [QImage(), QImage(),
-                                  QImage(), QImage(),
-                                  QImage(), QImage(), QImage()],
-                       'Golem': [QImage(), QImage(), QImage(),
-                                    QImage(), QImage(),
-                                    QImage(), QImage()],
-                       'golem_attack': [QImage(), QImage(), QImage(),
-                                        QImage(), QImage(),
-                                        QImage(), QImage()],
-                       'Skeleton': [QImage(), QImage(), QImage(),
-                                    QImage(), QImage(),
-                                    QImage(), QImage()],
+                       'dragon_attack': [QImage()for i in range(7)],
+                       'Dragon':  [QImage()for i in range(7)],
+                       'Golem': [QImage()for i in range(7)],
+                       'golem_attack': [QImage()for i in range(7)],
+                       'Skeleton': [QImage()for i in range(7)],
                        'Thunderstorm': QImage(),
-                       'mage': [QImage(), QImage(), QImage()],
+                       'mage': [QImage()for i in range(3)],
                        'magic': QImage(),
-                       'poisontw': [QImage(), QImage(), QImage()],
+                       'poisontw': [QImage()for i in range(3)],
                        'poison': QImage(),
-                       'castle': [QImage(), QImage(), QImage()]}
+                       'castle': [QImage()for i in range(3)]}
         self.cursors = {'default': QCursor(QPixmap('images/cursor_03.png')),
                         'archers': QCursor(QPixmap('images/icon3.png')),
                         'mages': QCursor(QPixmap('images/icon5.png')),
@@ -106,13 +92,16 @@ class GameModel(QMainWindow):
                       'upgrade': QIcon(QPixmap('images/icon4.png')),
                       'poison': QIcon(QPixmap('images/icon6.png')),
                       'castle': QIcon(QPixmap('images/icon1.png')),
-                      'storm' : QIcon(QPixmap('images/storm.png'))}
+                      'storm': QIcon(QPixmap('images/storm.png'))}
         self.images['arrow'].load('images/arrow.png')
         self.images['road'].load('images/road.jpg')
         self.images['poison'].load('images/poison.png')
         self.images['magic'].load('images/magic.png')
         self.images['Thunderstorm'].load('images/thunderstorm.png')
-        for i in range(0, 3):
+        for i in range(5):
+            self.images['background'][i] \
+                .load('images/back{}.jpg'.format(str(i + 1)))
+        for i in range(3):
             self.images['archers'][i]\
                 .load('images/archers{}.png'.format(str(i + 1)))
             self.images['mage'][i]\
@@ -123,9 +112,7 @@ class GameModel(QMainWindow):
                 .load('images/castle{}.png'.format(str(i + 1)))
             self.images['Tree'][i]\
                 .load('images/tree{}.png'.format(str(i + 1)))
-            self.images['background'][i]\
-                .load('images/back{}.jpg'.format(str(i + 1)))
-        for i in range(0, 7):
+        for i in range(7):
             self.images['Dragon'][i]\
                 .load('images/dragon2{}.png'.format(str(i + 1)))
             self.images['dragon_attack'][i]\
@@ -148,13 +135,17 @@ class GameModel(QMainWindow):
                 for i in range(len(self.images[image])):
                     wth = self.images[image][i].width()
                     hgt = self.images[image][i].height()
-                    self.images[image][i] =  self.images[image][i].scaledToWidth((wth * width) / 1920)
-                    self.images[image][i] =self.images[image][i].scaledToHeight((hgt * height) / 1080)
+                    self.images[image][i] = self.images[image][i]\
+                        .scaledToWidth((wth * width) / 1920)
+                    self.images[image][i] = self.images[image][i]\
+                        .scaledToHeight((hgt * height) / 1080)
             else:
                 wth = self.images[image].width()
                 hgt = self.images[image].height()
-                self.images[image] = self.images[image].scaledToWidth((wth * width) / 1920)
-                self.images[image] = self.images[image].scaledToHeight((hgt * height) / 1080)
+                self.images[image] = self.images[image]\
+                    .scaledToWidth((wth * width) / 1920)
+                self.images[image] = self.images[image]\
+                    .scaledToHeight((hgt * height) / 1080)
 
     def timerEvent(self, event):
         self.game.enemy_move()
@@ -174,10 +165,11 @@ class GameModel(QMainWindow):
             pic = self.images[tower.image][tower.level]
             painter.drawImage(-pic.width()/2, -pic.height()/2, pic)
             painter.setTransform(matrix)
-        for enemy in self.game.creatures:
+        for enemy in self.game.monsters:
             matrix = painter.transform()
             painter.translate(enemy.location.X, enemy.location.Y)
-            pic = self.images[enemy.image][enemy.get_image()]
+            pic = self.images[enemy.image][enemy.get_image()]\
+                .mirrored(math.pi - enemy.dir < 0.025, False)
             painter.drawImage(-pic.width() / 2, -pic.height() / 2, pic)
             painter.fillRect(-pic.width() / 2, -pic.height() / 2 - 10,
                              pic.width(), 7, self.red)
@@ -197,7 +189,8 @@ class GameModel(QMainWindow):
         painter.setFont(QFont('Decorative', 16))
 
         painter.fillRect(20, 40, 250, 20, self.white)
-        painter.fillRect(20, 40, 250 * self.game.player.mana / 100, 20, self.blue)
+        painter.fillRect(20, 40, 250 * self.game.player.mana / 100,
+                         20, self.blue)
         painter.setPen(QColor(0, 0, 255))
         painter.drawText(120, 58, 'Mana : {}'.format(self.game.player.mana))
 
@@ -205,9 +198,6 @@ class GameModel(QMainWindow):
         painter.drawText(10, 20, 'Health: {}'.format(self.game.player.health))
         painter.setPen(QColor(255, 255, 0))
         painter.drawText(120, 20, 'Gold: {}'.format(self.game.player.gold))
-
-
-
 
         tower = self.game.tower
         if self.game.level < 2:
@@ -233,20 +223,24 @@ class GameModel(QMainWindow):
     def draw_map(self, painter):
         painter.drawImage(0, 0,
                           self.images['background'][self.game.game_level])
-        count = len(self.game.road)
-        for i in range(count - 1):
-            vector = Vector(self.game.road[i].X, self.game.road[i].Y)
-            difference = self.game.road[i + 1] - vector
-            while difference.length > 50:
-                painter.drawImage(vector.X, vector.Y, self.images['road'])
-                width = self.images['road'].width()
-                delta = Vector(math.cos(difference.angle) * width,
-                               math.sin(difference.angle) * width)
-                vector = vector + delta
-                difference = self.game.road[i + 1] - vector
+        for path in self.game.road:
+            count = len(path)
+            for i in range(count - 1):
+                vector = Vector(path[i].X, path[i].Y)
+                difference = path[i + 1] - vector
+                while difference.length > 50:
+                    width = self.images['road'].width()
+                    painter.drawImage(vector.X - width / 2,
+                                      vector.Y - width / 2,
+                                      self.images['road'])
+                    delta = Vector(math.cos(difference.angle) * width,
+                                   math.sin(difference.angle) * width)
+                    vector = vector + delta
+                    difference = path[i + 1] - vector
         castle = self.images['castle'][self.game.level]
-        painter.drawImage(self.game.road[count - 1].X - castle.width() / 2,
-                          self.game.road[count - 1].Y - castle.width() / 2,
+        count = len(self.game.road[0])
+        painter.drawImage(self.game.road[0][count - 1].X - castle.width() / 2,
+                          self.game.road[0][count - 1].Y - castle.width() / 2,
                           castle)
 
     def mousePressEvent(self, QMouseEvent):
@@ -277,5 +271,5 @@ class GameModel(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    game = GameModel()
+    game = View()
     sys.exit(app.exec_())
