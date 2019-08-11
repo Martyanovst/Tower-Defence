@@ -128,9 +128,9 @@ class View(QMainWindow):
         geometry = QDesktopWidget.screenGeometry(QDesktopWidget())
         width = geometry.width()
         height = geometry.height()
-        print(height)
-        print(width)
         for image in self.images.keys():
+            if image == 'road':
+                continue
             if isinstance(self.images[image], list):
                 for i in range(len(self.images[image])):
                     wth = self.images[image][i].width()

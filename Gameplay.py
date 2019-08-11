@@ -19,7 +19,7 @@ class Game:
         self.game_level = 0
         self.monsters = []
         self.lock = threading.Lock()
-        self.spawn = threading.Thread(target=self.create)
+        self.spawn = threading.Thread(target=self.create,daemon=True)
         self.spell = None
 
     def start_game(self):
@@ -53,15 +53,25 @@ class Game:
             self.monsters.append(Monster(self.road[0], skeleton))
             self.lock.release()
             time.sleep(1)
+        self.lock.acquire()
         self.monsters.append(Monster(self.road[0], tree))
+        self.lock.release()
         time.sleep(0.5)
+        self.lock.acquire()
         self.monsters.append(Monster(self.road[0], tree))
+        self.lock.release()
         time.sleep(0.5)
+        self.lock.acquire()
         self.monsters.append(Monster(self.road[0], skeleton))
+        self.lock.release()
         for i in range(6):
+            self.lock.acquire()
             self.monsters.append(Monster(self.road[0], tree))
+            self.lock.release()
             time.sleep(0.5)
+            self.lock.acquire()
             self.monsters.append(Monster(self.road[0], skeleton))
+            self.lock.release()
             time.sleep(1)
         self.lock.acquire()
         self.monsters.append(Boss(self.road[0], dragon))
@@ -365,9 +375,7 @@ class Spell:
         self.is_executed = False
 
     def invoke(self, monsters, location):
-        if self.class_ == 'Thunderstorm':
             self.thunderstorm(monsters)
-            return
 
     def thunderstorm(self, monsters):
         for monster in monsters:
@@ -609,7 +617,7 @@ class Archers:
 class Monster:
 
     def __init__(self, path, class_):
-        self.location = Vector(path[0].X, path[0].Y)
+        self.location = path[0]
         self.full_health = int(config.get(Game.conf(), class_, 'health'))
         self.health = self.full_health
         self.animation = 5
@@ -664,7 +672,7 @@ class Monster:
 class Boss:
 
     def __init__(self,  path, class_):
-        self.location = Vector(path[0].X, path[0].Y)
+        self.location = path[0]
         self.full_heath = int(config.get(Game.conf(), class_, 'health'))
         self.health = self.full_heath
         self.animation = 5
